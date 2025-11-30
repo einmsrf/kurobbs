@@ -2,26 +2,26 @@
 // 主脚本: cron 类型，定时执行兑换逻辑
 // 基于 nsloon.app Script API
 
-const $ = new Env("Kurobbs 兑换自动化");  // 使用 $ 变量 (如 $httpClient, $notification 等)
-
 // 商品Code 硬编码: 从列表响应中复制最新 commodityCode 填入此处 (每次上新商品需手动更新)
 const targetCommodityCode = "1443554543620575232";  // 用户填入: 商品的 commodityCode
 
-// 从 persistentStore 或 Argument 读取配置 (优先 persistentStore)
+let $ = new Env("Kurobbs 兑换自动化");  // 使用 $ 变量 (如 $httpClient, $notification 等)
+
+// 从 $argument 读取配置 (Argument 参数通过 $argument.get("param") 获取)
 let config = {
-    enable: $persistentStore.read("enable") || $argument.get("enable") || "1",
-    token: $persistentStore.read("token") || $argument.get("token") || "",
-    devCode: $persistentStore.read("devCode") || $argument.get("devCode") || "",
-    mobile: $persistentStore.read("mobile") || $argument.get("mobile") || "",
-    receiver: $persistentStore.read("receiver") || $argument.get("receiver") || "",
-    province: $persistentStore.read("province") || $argument.get("province") || "",
-    city: $persistentStore.read("city") || $argument.get("city") || "",
-    area: $persistentStore.read("area") || $argument.get("area") || "",
-    detail: $persistentStore.read("detail") || $argument.get("detail") || ""
+    enable: $argument.get("enable") || "true",
+    token: $argument.get("token") || "",
+    devCode: $argument.get("devCode") || "",
+    mobile: $argument.get("mobile") || "",
+    receiver: $argument.get("receiver") || "",
+    province: $argument.get("province") || "",
+    city: $argument.get("city") || "",
+    area: $argument.get("area") || "",
+    detail: $argument.get("detail") || ""
 };
 
 // 检查开关
-if (config.enable !== "1") {
+if (config.enable !== "true") {
     console.log("兑换自动化已关闭");
     $done();
     return;
@@ -64,10 +64,16 @@ async function postRequest(url, body) {
             url: `https://api.kurobbs.com${url}`,
             headers: headers,
             body: body,
-            handler: (response) => {
+            handler: function(response) {
+                let data;
+                try {
+                    data = JSON.parse(response.body);
+                } catch (e) {
+                    data = response.body;
+                }
                 resolve({
                     status: response.status,
-                    data: typeof response.body === "string" ? JSON.parse(response.body) : response.body
+                    data: data
                 });
             }
         });
@@ -152,9 +158,4 @@ async function runExchange() {
 }
 
 // 执行
-if (config.enable === "1") {
-    runExchange();
-} else {
-    console.log("关闭状态，跳过执行");
-    $done();
-}
+runExchange();
