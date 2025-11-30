@@ -1,0 +1,15 @@
+#!name=自动兑换商品插件
+#!desc=每月30日中午12点定时执行战双帕弥什商品兑换脚本，支持自定义商品ID。集成Geetest CAPTCHA动态捕获：拦截/verify响应提取seccode参数，URL编码存储为geeTestData变量；丢弃含geeTestData的订单创建请求（一次性）。定时脚本读取变量执行兑换。依赖用户token，适用于KuroGameBox iOS环境。
+
+[Script]
+# Geetest 验证响应处理：提取seccode参数，构建并存储URL编码的geeTestData
+http-response ^https?:\/\/gcaptcha4\.geetest\.com\/verify script-path = https://raw.githubusercontent.com/your-repo/geetest-capture.js, requires-body = true, timeout = 10, tag = GeetestCapture
+
+# 订单创建请求拦截：若body含geeTestData，则丢弃（一次性）
+http-request ^https?:\/\/api\.kurobbs\.com\/encourage\/order\/create script-path = https://raw.githubusercontent.com/your-repo/order-intercept.js, requires-body = true, timeout = 10, tag = OrderIntercept
+
+# 定时兑换商品脚本：读取geeTestData变量，执行创建订单
+cron "0 12 30 * *" script-path = https://raw.githubusercontent.com/your-repo/exchange-commodity.js, timeout = 60, tag = ExchangeCommodity
+
+[General]
+bypass-system = true
